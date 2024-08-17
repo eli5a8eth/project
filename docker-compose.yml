@@ -1,0 +1,54 @@
+version: "3.7"
+
+networks:
+  app-tier:
+    driver: bridge
+
+services:
+  nginx:
+    image: nginx:1.17.8
+    ports:
+      - "8888:80"
+    networks:
+      - app-tier
+    volumes:
+      - ./:/var/www/html/
+      - ./docker/nginx/conf.d/xdebug.ini:/etc/nginx/conf.d/docker-php-ext-xdebug.ini
+      - ./docker/nginx/conf.d/error_reporting.ini:/etc/nginx/conf.d/error_reporting.ini
+      - ./docker/nginx/conf.d/:/etc/nginx/conf.d/
+    links:
+      - php
+    container_name: project_nginx
+
+  php:
+    build:
+      context: ./docker/php/
+    networks:
+      - app-tier
+    expose:
+      - 9000
+    volumes:
+      - ./:/var/www/html/
+    container_name: project_php
+
+  postgres:
+    image: postgres:15
+    networks:
+      - app-tier
+    environment:
+      POSTGRES_USER: project_user
+      POSTGRES_PASSWORD: project_password
+      POSTGRES_DB: project_db
+    volumes:
+      - ./docker/postgres/data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    container_name: project_postgres
+
+  redis:
+    image: redis:7
+    networks:
+      - app-tier
+    ports:
+      - "6379:6379"
+    container_name: project_redis
